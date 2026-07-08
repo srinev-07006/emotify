@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Emotify Test</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; text-align: center; }
+    #result { margin-top: 20px; font-size: 24px; font-weight: bold; }
+    #bars { margin-top: 16px; text-align: left; }
+    .bar-row { margin: 6px 0; font-size: 13px; }
+    .bar { height: 14px; background: #6c63ff; border-radius: 4px; display: inline-block; }
+    img { max-width: 300px; max-height: 300px; margin-top: 12px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <h2>Emotify — Emotion Detector</h2>
+  <input type="file" id="fileInput" accept="image/*">
+  <br>
+  <img id="preview" style="display:none">
+  <div id="result"></div>
+  <div id="bars"></div>
+
+  <script>
+    document.getElementById("fileInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        document.getElementById("preview").src = ev.target.result;
+        document.getElementById("preview").style.display = "block";
+
+        // Strip the data:image/...;base64, prefix
+        const b64 = ev.target.result.split(",")[1];
+
+        document.getElementById("result").textContent = "Analyzing...";
+        document.getElementById("bars").innerHTML = "";
+
+        try {
+          const res = await fetch("http://localhost:8000/predict", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: b64 })
+          });
+          const data = await res.json();
+
+          document.getElementById("result").textContent =
+            `${data.emotion.toUpperCase()} (${(data.confidence * 100).toFixed(1)}%)`;
+
+          // Show all scores as bars
+          const bars = document.getElementById("bars");
+          for (const [emotion, score] of Object.entries(data.all_scores)) {
+            bars.innerHTML += `
+              <div class="bar-row">
+                ${emotion.padEnd(10)} 
+                <span class="bar" style="width:${score*200}px"></span>
+                ${(score*100).toFixed(1)}%
+              </div>`;
+          }
+        } catch (err) {
+          document.getElementById("result").textContent = "Error — is uvicorn running?";
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>

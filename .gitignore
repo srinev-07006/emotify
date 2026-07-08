@@ -1,0 +1,26 @@
+# Python virtual environment
+emotion_env/
+
+# Trained model files (too large for GitHub)
+*.keras
+*.h5
+*.pb
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Dataset (never push this)
+dataset/
+
+# Spring Boot
+backend/target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
