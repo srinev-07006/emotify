@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -20,11 +21,14 @@ public class EmotionController {
     public ResponseEntity<?> detect(@RequestBody Map<String, String> body,
                                     Authentication auth) {
         try {
-            String email = auth.getName();
-            Map<String, Object> result = emotionService.detectEmotion(body.get("image"), email);
-            String emotion = (String) result.get("emotion");
+            String image = body.get("image");
+            if (image == null || image.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "image field is required"));
+            }
 
-            // Also return song recommendations immediately
+            String email = auth.getName();
+            Map<String, Object> result = new HashMap<>(emotionService.detectEmotion(image, email));
+            String emotion = (String) result.get("emotion");
             result.put("songs", recommendService.recommend(emotion));
             return ResponseEntity.ok(result);
         } catch (Exception e) {
