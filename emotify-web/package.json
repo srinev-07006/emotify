@@ -2,6 +2,11 @@
   "name": "emotify-web",
   "version": "0.1.0",
   "private": true,
+  "browser": {
+    "fs": false,
+    "path": false,
+    "os": false
+  },
   "dependencies": {
     "@tensorflow/tfjs-converter": "^1.7.4",
     "@testing-library/dom": "^10.4.1",
