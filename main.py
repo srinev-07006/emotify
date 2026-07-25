@@ -1,13 +1,14 @@
 import io
 import base64
 import numpy as np
-import tensorflow as tf
 from PIL import Image
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from deepface import DeepFace
+import tempfile, os
 
-app = FastAPI(title="Emotify", description="Emotion Detection API")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,44 +17,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load model on startup
-print("Loading model...")
-model = tf.keras.models.load_model("best_model.h5")
-print("Model loaded successfully.")
-
-# Must match train_data.class_indices from your training output:
-# {'angry':0, 'disgust':1, 'fear':2, 'happy':3, 'neutral':4, 'sad':5, 'surprise':6}
-EMOTIONS = ["angry", "disgust", "fear", "happy", "neutral", "sad", "surprise"]
-
 class ImageInput(BaseModel):
-    image: str  # base64 encoded JPEG or PNG
-
-def preprocess(b64_string: str) -> np.ndarray:
-    img_bytes = base64.b64decode(b64_string)
-    img = Image.open(io.BytesIO(img_bytes)).convert("L")  # grayscale
-    img = img.resize((96, 96))
-    arr = np.array(img, dtype=np.float32) / 255.0
-    arr = arr.reshape(1, 96, 96, 1)
-    return arr
+    image: str
 
 @app.post("/predict")
 def predict(data: ImageInput):
     try:
-        arr = preprocess(data.image)
-        preds = model.predict(arr, verbose=0)[0]
-        idx = int(np.argmax(preds))
-        emotion = EMOTIONS[idx]
-        confidence = round(float(preds[idx]), 4)
-        all_scores = {e: round(float(p), 4) for e, p in zip(EMOTIONS, preds)}
+        img_bytes = base64.b64decode(data.image)
+        img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+
+        # Save to temp file — DeepFace needs a file path
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+            img.save(tmp.name)
+            tmp_path = tmp.name
+
+        result = DeepFace.analyze(
+            tmp_path,
+            actions=["emotion"],
+            enforce_detection=False,
+            detector_backend="skip"  # change from default opencv
+        )
+        os.unlink(tmp_path)
+
+        emotions = result[0]["emotion"]
+        dominant = str(result[0]["dominant_emotion"])
+        confidence = float(emotions[dominant]) / 100
 
         return {
-            "emotion": emotion,
-            "confidence": confidence,
-            "all_scores": all_scores
+            "emotion": dominant,
+            "confidence": round(confidence, 4),
+            "all_scores": {k: round(float(v) / 100, 4) for k, v in emotions.items()}
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "loaded"}
+    return {"status": "ok", "model": "deepface"}
