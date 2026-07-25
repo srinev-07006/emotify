@@ -24,3 +24,19 @@ backend/target/
 # OS files
 .DS_Store
 Thumbs.db
+
+gitignore
+# React web app
+emotify-web/node_modules/
+emotify-web/build/
+
+# Face API models (downloaded at runtime)
+emotify-web/public/models/
+
+# Python
+__pycache__/
+*.pyc
+temp.jpg
+
+# DeepFace cache (downloads models here)
+C:\Users\User\.deepface/
