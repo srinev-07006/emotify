@@ -35,7 +35,7 @@ def predict(data: ImageInput):
             tmp_path,
             actions=["emotion"],
             enforce_detection=False,
-            detector_backend="skip"  # change from default opencv
+            detector_backend="opencv"  # change from default opencv
         )
         os.unlink(tmp_path)
 
