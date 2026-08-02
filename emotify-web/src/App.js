@@ -4,6 +4,7 @@ import Register from './pages/Register';
 import Camera from './pages/Camera';
 import Result from './pages/Result';
 import History from './pages/History';
+import Playlists from './pages/Playlists';
 import './App.css';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
       {page === 'camera' && <Camera navigate={navigate} logout={logout} />}
       {page === 'result' && <Result result={result} navigate={navigate} />}
       {page === 'history' && <History navigate={navigate} />}
+      {page === 'playlists' && <Playlists navigate={navigate} />}
     </div>
   );
 }

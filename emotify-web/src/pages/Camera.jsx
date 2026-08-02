@@ -147,6 +147,7 @@ function Camera({ navigate, logout }) {
         <div className="topbar-actions">
           <button className="icon-btn" onClick={() => navigate('history')}>☰</button>
           <button className="icon-btn" onClick={logout}>↪</button>
+          <button className="icon-btn" onClick={() => navigate('playlists')}>♪</button>
         </div>
       </div>
       <div className="camera-container">
