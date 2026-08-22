@@ -1,12 +1,11 @@
 import io
 import base64
-import numpy as np
+import tempfile
+import os
 from PIL import Image
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from deepface import DeepFace
-import tempfile, os
 
 app = FastAPI()
 
@@ -17,6 +16,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Preload DeepFace at startup so first request isn't slow
+print("Loading DeepFace model...")
+from deepface import DeepFace
+# Warm up with a dummy call
+import numpy as np
+dummy = np.zeros((48, 48, 3), dtype=np.uint8)
+dummy_path = "/tmp/dummy.jpg"
+from PIL import Image as PILImage
+PILImage.fromarray(dummy).save(dummy_path)
+try:
+    DeepFace.analyze(dummy_path, actions=["emotion"],
+                     enforce_detection=False, detector_backend="skip")
+except:
+    pass
+print("DeepFace model loaded.")
+
 class ImageInput(BaseModel):
     image: str
 
@@ -26,7 +41,6 @@ def predict(data: ImageInput):
         img_bytes = base64.b64decode(data.image)
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
 
-        # Save to temp file — DeepFace needs a file path
         with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
             img.save(tmp.name)
             tmp_path = tmp.name
@@ -35,22 +49,22 @@ def predict(data: ImageInput):
             tmp_path,
             actions=["emotion"],
             enforce_detection=False,
-            detector_backend="opencv"  # change from default opencv
+            detector_backend="skip"
         )
         os.unlink(tmp_path)
 
         emotions = result[0]["emotion"]
-        dominant = str(result[0]["dominant_emotion"])
-        confidence = float(emotions[dominant]) / 100
+        dominant = result[0]["dominant_emotion"]
+        confidence = emotions[dominant] / 100
 
         return {
             "emotion": dominant,
             "confidence": round(confidence, 4),
-            "all_scores": {k: round(float(v) / 100, 4) for k, v in emotions.items()}
+            "all_scores": {k: round(v/100, 4) for k, v in emotions.items()}
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "deepface"}
+    return {"status": "ok"}
