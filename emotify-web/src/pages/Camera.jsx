@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from "react";
-import * as faceapi from "face-api.js";
 import api from "../api";
 
 function Camera({ navigate, logout }) {
