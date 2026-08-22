@@ -1,7 +1,6 @@
 fastapi==0.111.0
 uvicorn==0.30.0
 pillow==10.4.0
-deepface==0.0.92
-tf-keras==2.16.0
-opencv-python-headless==4.10.0.84
+fer==22.5.1
 numpy==1.26.4
+opencv-python-headless==4.10.0.84
